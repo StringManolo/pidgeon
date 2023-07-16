@@ -19,19 +19,28 @@ console.log(`El string random es: ${randomString}`);
   return [ randomString, key.encrypt(randomString, 'base64') ];
 }
 
-// Verificar si la clave privada descifrada es correcta
+// Verificar si la clave de borrado descifrada es correcta
 function isDeleteKeyValid(deleteKey: string | undefined, decryptedKey: string): boolean {
   return deleteKey !== undefined && deleteKey === decryptedKey;
 }
 
-// Crear un nuevo usuario con alias y par de claves
+// Crear un nuevo usuario con alias y clave pública
 app.post('/users', (req: Request, res: Response) => {
   const alias = req.body.alias;
   const pubKey = req.body.pubKey;
+
+  // Comprobar si ya existe un usuario con el mismo alias
+  const existingUser = userList.find((user) => user.alias === alias);
+  if (existingUser) {
+    return res.status(409).json({ error: 'Ya existe un usuario con ese alias' });
+  }
+
   const user: User = { alias, pubKey, inbox: [] };
   userList.push(user);
   res.json({ success: true });
 });
+
+
 
 // Enviar mensaje a un usuario
 app.post('/users/:userId/inbox', (req: Request, res: Response) => {

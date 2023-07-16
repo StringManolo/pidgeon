@@ -3,7 +3,7 @@ import NodeRSA from 'node-rsa';
 import fs from 'fs';
 
 // Generar un par de claves RSA
-function generateRSAKeyPair(): { publicKey: string; privateKey: string } {
+export function generateRSAKeyPair(): { publicKey: string; privateKey: string } {
   const key = new NodeRSA({ b: 2048 }); // Seleccionar el tamaño de clave adecuado
   return {
     publicKey: key.exportKey('pkcs8-public-pem'),
@@ -12,27 +12,27 @@ function generateRSAKeyPair(): { publicKey: string; privateKey: string } {
 }
 
 // Cifrar un mensaje con la clave pública del destinatario
-function encryptMessage(message: string, publicKey: string): string {
+export function encryptMessage(message: string, publicKey: string): string {
   const key = new NodeRSA();
   key.importKey(publicKey, 'pkcs8-public-pem');
   return key.encrypt(message, 'base64');
 }
 
 // Descifrar un mensaje con la clave privada del destinatario
-function decryptMessage(encryptedMessage: string, privateKey: string): string {
+export function decryptMessage(encryptedMessage: string, privateKey: string): string {
   const key = new NodeRSA();
   key.importKey(privateKey, 'pkcs8-private-pem');
   return key.decrypt(encryptedMessage, 'utf8');
 }
 
 // Verificar si existe el archivo de clave privada
-function privateKeyExists(alias: string): boolean {
+export function privateKeyExists(alias: string): boolean {
   const privateKeyPath = `./pidgeon_${alias}_privKey.pem`;
   return fs.existsSync(privateKeyPath);
 }
 
 // Crear un nuevo usuario con alias y par de claves
-async function createUser(alias: string) {
+export async function createUser(alias: string) {
   // Verificar si el usuario ya tiene una clave privada
   if (privateKeyExists(alias)) {
     console.log('El usuario ya tiene una clave privada.');
@@ -54,7 +54,7 @@ async function createUser(alias: string) {
 }
 
 // Enviar un mensaje a un usuario
-async function sendMessage(userId: string, sender: string, content: string) {
+export async function sendMessage(userId: string, sender: string, content: string) {
   try {
     const response = await axios.get(`http://localhost:3000/users/${userId}`);
     const user = response.data;
@@ -72,7 +72,7 @@ async function sendMessage(userId: string, sender: string, content: string) {
 }
 
 // Buscar un usuario por alias o pubKey
-async function findUser(userId: string) {
+export async function findUser(userId: string) {
   try {
     const response = await axios.get(`http://localhost:3000/users/${userId}`);
     console.log('Usuario encontrado:', response.data);
@@ -82,7 +82,7 @@ async function findUser(userId: string) {
 }
 
 // Obtener la lista de usuarios
-async function getUserList() {
+export async function getUserList() {
   try {
     const response = await axios.get('http://localhost:3000/users');
     console.log('Lista de usuarios:', response.data);
@@ -92,7 +92,7 @@ async function getUserList() {
 }
 
 // Descifrar la bandeja de entrada de un usuario
-async function decryptInbox(userId: string) {
+export async function decryptInbox(userId: string) {
   try {
     const privateKeyPath = `./pidgeon_${userId}_privKey.pem`;
     const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -113,7 +113,7 @@ async function decryptInbox(userId: string) {
 }
 
 // Vaciar el inbox de un usuario
-async function deleteInbox(userId: string) {
+export async function deleteInbox(userId: string) {
   try {
     const response = await axios.get(`http://localhost:3000/users/${userId}/inbox/deleteKey`);
     const { encryptedKey } = response.data;
@@ -139,7 +139,11 @@ async function deleteInbox(userId: string) {
 }
 
 
-// Ejemplo de uso
+
+
+
+/*
+ // Ejemplo de uso
 async function runExample() {
   const alias = 'user_17371';
   await createUser(alias);
@@ -151,4 +155,4 @@ async function runExample() {
 }
 
 runExample();
-
+*/
