@@ -92,8 +92,11 @@ async function getUserList() {
 }
 
 // Descifrar la bandeja de entrada de un usuario
-async function decryptInbox(userId: string, privateKey: string) {
+async function decryptInbox(userId: string) {
   try {
+    const privateKeyPath = `./pidgeon_${userId}_privKey.pem`;
+    const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+
     const response = await axios.get(`http://localhost:3000/users/${userId}/inbox`);
     const inbox = response.data;
 
@@ -109,17 +112,42 @@ async function decryptInbox(userId: string, privateKey: string) {
   }
 }
 
+// Vaciar el inbox de un usuario
+async function deleteInbox(userId: string) {
+  try {
+    const response = await axios.get(`http://localhost:3000/users/${userId}/inbox/deleteKey`);
+    const { encryptedKey } = response.data;
+
+    const privateKeyPath = `./pidgeon_${userId}_privKey.pem`;
+    const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+    const key = new NodeRSA();
+    key.importKey(privateKey, 'pkcs8-private-pem');
+    const decryptedKey = key.decrypt(encryptedKey, 'utf8');
+    console.log(`[DEBUG] Decrypted key: ${decryptedKey}`);
+
+
+    const deleteResponse = await axios.delete(`http://localhost:3000/users/${userId}/inbox`, { data: { deleteKey: decryptedKey } });
+
+    if (deleteResponse.data.success) {
+      console.log('Bandeja de entrada vaciada correctamente');
+    } else {
+      console.log('No se pudo vaciar la bandeja de entrada');
+    }
+  } catch (error: unknown) {
+    console.error('Error al vaciar el inbox:', error);
+  }
+}
+
+
 // Ejemplo de uso
 async function runExample() {
-  const alias = 'alias1';
+  const alias = 'user_17371';
   await createUser(alias);
-  await sendMessage(alias, 'stringmanolo', 'Hola :D');
+  await sendMessage(alias, 'sender', 'Hola soy StringManolo :D');
   await findUser(alias);
   await getUserList();
-
-  const privateKeyPath = `./pidgeon_${alias}_privKey.pem`;
-  const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-  await decryptInbox(alias, privateKey);
+  await decryptInbox(alias);
+  await deleteInbox(alias);
 }
 
 runExample();
