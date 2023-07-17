@@ -1,7 +1,6 @@
 import axios from 'axios';
 import NodeRSA from 'node-rsa';
 import fs from 'fs';
-import readline from 'readline';
 
 // Generar un par de claves RSA
 export function generateRSAKeyPair(): { publicKey: string; privateKey: string } {

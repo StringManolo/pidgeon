@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import { User, Message, RandomString } from './models';
 import NodeRSA from 'node-rsa';
 import crypto from 'crypto';
@@ -6,6 +7,7 @@ import crypto from 'crypto';
 const app = express();
 const port = 3000;
 app.use(express.json());
+app.use(cors());
 
 const userList: User[] = [];
 const randomStrings: RandomString[] = [];
