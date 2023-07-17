@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Pidgeon</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/StringManolo/pidgeon/0b146558f562cf4d1028b74c72a2b2c5a2ee980c/img/pidgeon.webp">
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -24,13 +25,14 @@
       }
 
       button {
-        padding: 10px 20px;
+        padding: 8px 16px;
         font-size: 16px;
-        background-color: #4caf50;
+        background-color: #7E69E2;
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 4%;
         cursor: pointer;
+        margin: 0.5px;
       }
 
       .input-container {
@@ -66,7 +68,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>Pidgeon Encryption</h1>
+      <h1>Pidgeon</h1>
 
       <div class="button-container">
         <button onclick="createUser()">Create User</button>
@@ -159,8 +161,7 @@
 
           const messageData = {
             sender,
-            content: encryptedMessage,
-          };
+            content: encryptedMessage,                                                            };
           await axios.post(`${serverEndpoint}/users/${userId}/inbox`, messageData);
           logToDiv('Message sent successfully');
         } catch (error) {
@@ -309,3 +310,4 @@
     </script>
   </body>
 </html>
+
