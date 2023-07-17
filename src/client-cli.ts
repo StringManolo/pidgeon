@@ -71,11 +71,11 @@ switch (command) {
     console.log(
       'Comandos disponibles:\n' +
         '  createUser <alias>\n' +
-        '  sendMessage <userId> <sender> <content>\n' +
-        '  findUser <userId>\n' +
+        '  sendMessage <alias> <sender> <content>\n' +
+        '  findUser <alias>\n' +
         '  getUserList\n' +
-        '  decryptInbox <userId>\n' +
-        '  deleteInbox <userId>'
+        '  decryptInbox <alias>\n' +
+        '  deleteInbox <alias>'
     );
     break;
 }

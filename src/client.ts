@@ -1,6 +1,7 @@
 import axios from 'axios';
 import NodeRSA from 'node-rsa';
 import fs from 'fs';
+import readline from 'readline';
 
 // Generar un par de claves RSA
 export function generateRSAKeyPair(): { publicKey: string; privateKey: string } {
@@ -25,17 +26,40 @@ export function decryptMessage(encryptedMessage: string, privateKey: string): st
   return key.decrypt(encryptedMessage, 'utf8');
 }
 
-// Verificar si existe el archivo de clave privada
-export function privateKeyExists(alias: string): boolean {
+// Verificar si existe el archivo de clave privada o si el usuario existe en la base de datos
+export async function privateKeyExists(alias: string): Promise<boolean> {
   const privateKeyPath = `./pidgeon_${alias}_privKey.pem`;
-  return fs.existsSync(privateKeyPath);
+  const existsLocally = fs.existsSync(privateKeyPath);
+
+  if (!existsLocally) {
+    try {
+      await axios.get(`http://localhost:3000/users/${alias}`);
+      return true; // El usuario existe en la base de datos
+    } catch (error: unknown) {
+      return false; // El usuario no existe en la base de datos
+    }
+  }
+
+  return existsLocally;
 }
 
 // Crear un nuevo usuario con alias y par de claves
 export async function createUser(alias: string) {
+  // Verificar si el usuario ya existe en la base de datos
+  try {
+    await axios.get(`http://localhost:3000/users/${alias}`);
+    console.log('El usuario ya existe en la base de datos.');
+    return;
+  } catch (error: unknown) {
+    // El usuario no existe en la base de datos
+  }
+
   // Verificar si el usuario ya tiene una clave privada
-  if (privateKeyExists(alias)) {
-    console.log('El usuario ya tiene una clave privada.');
+  if (await privateKeyExists(alias)) {
+    console.log(`El usuario ya tiene una clave privada pero no existe en la base de datos, Elimina la clave:
+
+rm "./pidgeon_${alias}_privKey.pem"
+`);
     return;
   }
 
@@ -108,7 +132,7 @@ export async function decryptInbox(userId: string) {
 
     console.log('Bandeja de entrada descifrada:', decryptedInbox);
   } catch (error: unknown) {
-    console.error('Error al descifrar la bandeja de entrada:', error);
+    console.error('Error al descifrar la bandeja de entrada:', (error as any)?.response?.data?.error); 
   }
 }
 
@@ -134,25 +158,7 @@ export async function deleteInbox(userId: string) {
       console.log('No se pudo vaciar la bandeja de entrada');
     }
   } catch (error: unknown) {
-    console.error('Error al vaciar el inbox:', error);
+    console.error('Error al vaciar el inbox:', (error as any)?.response ?.data?.error);
   }
 }
 
-
-
-
-
-/*
- // Ejemplo de uso
-async function runExample() {
-  const alias = 'user_17371';
-  await createUser(alias);
-  await sendMessage(alias, 'sender', 'Hola soy StringManolo :D');
-  await findUser(alias);
-  await getUserList();
-  await decryptInbox(alias);
-  await deleteInbox(alias);
-}
-
-runExample();
-*/
