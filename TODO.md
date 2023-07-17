@@ -18,3 +18,10 @@ Permite generar/cargar privKeys
 Demás funcionalidad para enviar mensajes, etc.  
 
 Valorar si hacer 2 clientes, uno que emule una terminal de linux y otro con "GUI"
+
+
+### Portar CLI a Python
+Muchod usuarios no instalarán nodejs  
+
+
+
