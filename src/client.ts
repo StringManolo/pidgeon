@@ -7,7 +7,21 @@ let serverEndpoint = 'https://publicpidgeon.glitch.me/'; // Endpoint por defecto
 // Función para cambiar el endpoint del servidor
 export function setServerEndpoint(endpoint: string) {
   serverEndpoint = endpoint;
+  fs.writeFileSync('./endpoint.txt', endpoint);
 }
+
+// Lee el endpoint del archivo endpoint.txt
+function readEndpointFromFile(): string {
+  try {
+    return fs.readFileSync('./endpoint.txt', 'utf8');
+  } catch (error) {
+    // Si el archivo no existe o hay algún error al leerlo, retorna el valor por defecto
+    return serverEndpoint;
+  }
+}
+
+// Al cargar el módulo, intenta leer el endpoint del archivo
+serverEndpoint = readEndpointFromFile();
 
 // Generar un par de claves RSA
 export function generateRSAKeyPair(): { publicKey: string; privateKey: string } {

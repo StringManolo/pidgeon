@@ -20,8 +20,21 @@ let serverEndpoint = 'https://publicpidgeon.glitch.me/'; // Endpoint por defecto
 // Función para cambiar el endpoint del servidor
 function setServerEndpoint(endpoint) {
     serverEndpoint = endpoint;
+    fs_1.default.writeFileSync('./endpoint.txt', endpoint);
 }
 exports.setServerEndpoint = setServerEndpoint;
+// Lee el endpoint del archivo endpoint.txt
+function readEndpointFromFile() {
+    try {
+        return fs_1.default.readFileSync('./endpoint.txt', 'utf8');
+    }
+    catch (error) {
+        // Si el archivo no existe o hay algún error al leerlo, retorna el valor por defecto
+        return serverEndpoint;
+    }
+}
+// Al cargar el módulo, intenta leer el endpoint del archivo
+serverEndpoint = readEndpointFromFile();
 // Generar un par de claves RSA
 function generateRSAKeyPair() {
     const key = new node_rsa_1.default({ b: 2048 }); // Seleccionar el tamaño de clave adecuado
