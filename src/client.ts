@@ -2,7 +2,7 @@ import axios from 'axios';
 import NodeRSA from 'node-rsa';
 import fs from 'fs';
 
-let serverEndpoint = 'http://localhost:3000'; // Endpoint por defecto
+let serverEndpoint = 'https://publicpidgeon.glitch.me/'; // Endpoint por defecto
 
 // Función para cambiar el endpoint del servidor
 export function setServerEndpoint(endpoint: string) {

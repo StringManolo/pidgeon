@@ -16,7 +16,7 @@ exports.deleteInbox = exports.decryptInbox = exports.getUserList = exports.findU
 const axios_1 = __importDefault(require("axios"));
 const node_rsa_1 = __importDefault(require("node-rsa"));
 const fs_1 = __importDefault(require("fs"));
-let serverEndpoint = 'http://localhost:3000'; // Endpoint por defecto
+let serverEndpoint = 'https://publicpidgeon.glitch.me/'; // Endpoint por defecto
 // Función para cambiar el endpoint del servidor
 function setServerEndpoint(endpoint) {
     serverEndpoint = endpoint;
