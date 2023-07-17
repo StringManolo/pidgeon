@@ -5,6 +5,7 @@ import {
   getUserList,
   decryptInbox,
   deleteInbox,
+  setServerEndpoint,
 } from './client';
 
 // Obtener argumentos de línea de comandos
@@ -67,6 +68,16 @@ switch (command) {
     }
     break;
 
+  case 'setEndpoint':
+    if (args.length !== 1) {
+      console.error('Uso incorrecto. El comando setEndpoint debe recibir un argumento: <endpoint>');
+    } else {
+      const [endpoint] = args;
+      setServerEndpoint(endpoint);
+      console.log('Endpoint del servidor actualizado:', endpoint);
+    }
+    break;
+
   default:
     console.log(
       'Comandos disponibles:\n' +
@@ -75,7 +86,8 @@ switch (command) {
         '  findUser <alias>\n' +
         '  getUserList\n' +
         '  decryptInbox <alias>\n' +
-        '  deleteInbox <alias>'
+        '  deleteInbox <alias>\n' +
+        '  setEndpoint <endpoint>'
     );
     break;
 }

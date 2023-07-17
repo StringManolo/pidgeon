@@ -1,10 +1,58 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Pidgeon Encryption</title>
+    <title>Pidgeon</title>
     <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .button-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .input-container {
+        margin-bottom: 10px;
+      }
+
+      label {
+        font-weight: bold;
+      }
+
+      input[type='text'],
+      input[type='file'] {
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
       #logOutput {
-        width: 500px;
+        width: 100%;
         height: 300px;
         overflow-y: scroll;
         background-color: black;
@@ -17,27 +65,48 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.24.0/axios.min.js"></script>
   </head>
   <body>
-    <h1>Pidgeon Encryption</h1>
+    <div class="container">
+      <h1>Pidgeon Encryption</h1>
 
-    <button onclick="createUser()">Create User</button>
-    <button onclick="getUserList()">Get User List</button>
-    <button onclick="findUser()">Find User</button>
-    <button onclick="sendMessage()">Send Message</button>
-    <button onclick="decryptInbox()">Decrypt Inbox</button>
-    <button onclick="deleteInbox()">Delete Inbox</button>
+      <div class="button-container">
+        <button onclick="createUser()">Create User</button>
+        <button onclick="getUserList()">Get User List</button>
+        <button onclick="findUser()">Find User</button>
+        <button onclick="sendMessage()">Send Message</button>
+        <button onclick="decryptInbox()">Decrypt Inbox</button>
+        <button onclick="deleteInbox()">Delete Inbox</button>
+      </div>
 
-    <input type="file" id="privateKeyInput" onchange="handlePrivateKeyChange()" accept=".pem" style="display: inline-block;">
+      <div class="input-container">
+        <label for="privateKeyInput">Private Key:</label>
+        <input type="file" id="privateKeyInput" onchange="handlePrivateKeyChange()" accept=".pem" />
+      </div>
 
-    <div id="logOutput"></div>
+      <div class="input-container">
+        <label for="endpointInput">Server Endpoint:</label>
+        <input type="text" id="endpointInput" value="http://localhost:3000" />
+        <button onclick="updateEndpoint()">Update Endpoint</button>
+      </div>
+
+      <div id="logOutput"></div>
+    </div>
 
     <script>
       let publicKey;
       let privateKey;
+      let serverEndpoint = 'http://localhost:3000';
 
       function logToDiv(message) {
         const logDiv = document.getElementById('logOutput');
         logDiv.innerText += message + '\n';
         logDiv.scrollTop = logDiv.scrollHeight; // Desplazar hasta el final
+      }
+
+      // Actualizar el endpoint del servidor
+      function updateEndpoint() {
+        const endpointInput = document.getElementById('endpointInput');
+        serverEndpoint = endpointInput.value;
+        logToDiv('Server endpoint updated: ' + serverEndpoint);
       }
 
       // Crear un nuevo usuario con alias y generar par de claves
@@ -47,7 +116,7 @@
 
         // Verificar si el usuario ya existe en la base de datos
         try {
-          await axios.get(`http://localhost:3000/users/${alias}`);
+          await axios.get(`${serverEndpoint}/users/${alias}`);
           logToDiv('The user already exists in the database.');
           return;
         } catch (error) {
@@ -62,7 +131,7 @@
 
         const { publicKey, privateKey } = generateRSAKeyPair();
         try {
-          await axios.post('http://localhost:3000/users', { alias, pubKey: publicKey });
+          await axios.post(`${serverEndpoint}/users`, { alias, pubKey: publicKey });
 
           logToDiv('User created successfully');
           logToDiv('Private key generated:\n' + privateKey);
@@ -84,7 +153,7 @@
         if (!content) return;
 
         try {
-          const response = await axios.get(`http://localhost:3000/users/${userId}`);
+          const response = await axios.get(`${serverEndpoint}/users/${userId}`);
           const user = response.data;
           const encryptedMessage = encryptMessage(content, user.pubKey);
 
@@ -92,7 +161,7 @@
             sender,
             content: encryptedMessage,
           };
-          await axios.post(`http://localhost:3000/users/${userId}/inbox`, messageData);
+          await axios.post(`${serverEndpoint}/users/${userId}/inbox`, messageData);
           logToDiv('Message sent successfully');
         } catch (error) {
           logToDiv('Error sending the message: ' + error);
@@ -105,7 +174,7 @@
         if (!userId) return;
 
         try {
-          const response = await axios.get(`http://localhost:3000/users/${userId}/inbox`);
+          const response = await axios.get(`${serverEndpoint}/users/${userId}/inbox`);
           const inbox = response.data;
 
           if (!privateKey) {
@@ -141,7 +210,7 @@
       // Verificar si existe el archivo de clave privada
       async function privateKeyExists(alias) {
         try {
-          await axios.get(`http://localhost:3000/users/${alias}`);
+          await axios.get(`${serverEndpoint}/users/${alias}`);
           return true; // El usuario existe en la base de datos
         } catch (error) {
           return false; // El usuario no existe en la base de datos
@@ -159,21 +228,21 @@
         return { publicKey, privateKey };
       }
 
-      // Encriptar un mensaje con la clave pública
+      // Cifrar un mensaje con la clave pública
       function encryptMessage(message, publicKey) {
         const encrypt = new JSEncrypt();
         encrypt.setPublicKey(publicKey);
         return encrypt.encrypt(message);
       }
 
-      // Desencriptar un mensaje con la clave privada
+      // Decryptar un mensaje con la clave privada
       function decryptMessage(encryptedMessage, privateKey) {
         const decrypt = new JSEncrypt();
         decrypt.setPrivateKey(privateKey);
         return decrypt.decrypt(encryptedMessage);
       }
 
-      // Descargar la clave privada como archivo PEM
+      // Descargar la clave privada como un archivo PEM
       function downloadPrivateKey(key, fileName) {
         const element = document.createElement('a');
         element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(key);
@@ -187,7 +256,7 @@
       // Obtener la lista de usuarios
       async function getUserList() {
         try {
-          const response = await axios.get('http://localhost:3000/users');
+          const response = await axios.get(`${serverEndpoint}/users`);
           logToDiv('List of users: ' + JSON.stringify(response.data));
         } catch (error) {
           logToDiv('Error getting the list of users: ' + error.response?.data.error);
@@ -200,7 +269,7 @@
         if (!userId) return;
 
         try {
-          const response = await axios.get(`http://localhost:3000/users/${userId}`);
+          const response = await axios.get(`${serverEndpoint}/users/${userId}`);
           logToDiv('User found: ' + JSON.stringify(response.data));
         } catch (error) {
           logToDiv('Error finding the user: ' + error.response?.data.error);
@@ -213,7 +282,7 @@
         if (!userId) return;
 
         try {
-          const response = await axios.get(`http://localhost:3000/users/${userId}/inbox/deleteKey`);
+          const response = await axios.get(`${serverEndpoint}/users/${userId}/inbox/deleteKey`);
           const { encryptedKey } = response.data;
 
           if (!privateKey) {
@@ -226,7 +295,7 @@
           const decryptedKey = decrypt.decrypt(encryptedKey);
           logToDiv('[DEBUG] Decrypted key: ' + decryptedKey);
 
-          const deleteResponse = await axios.delete(`http://localhost:3000/users/${userId}/inbox`, { data: { deleteKey: decryptedKey } });
+          const deleteResponse = await axios.delete(`${serverEndpoint}/users/${userId}/inbox`, { data: { deleteKey: decryptedKey } });
 
           if (deleteResponse.data.success) {
             logToDiv('Inbox emptied successfully');

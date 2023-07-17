@@ -2,6 +2,13 @@ import axios from 'axios';
 import NodeRSA from 'node-rsa';
 import fs from 'fs';
 
+let serverEndpoint = 'http://localhost:3000'; // Endpoint por defecto
+
+// Función para cambiar el endpoint del servidor
+export function setServerEndpoint(endpoint: string) {
+  serverEndpoint = endpoint;
+}
+
 // Generar un par de claves RSA
 export function generateRSAKeyPair(): { publicKey: string; privateKey: string } {
   const key = new NodeRSA({ b: 2048 }); // Seleccionar el tamaño de clave adecuado
@@ -32,7 +39,7 @@ export async function privateKeyExists(alias: string): Promise<boolean> {
 
   if (!existsLocally) {
     try {
-      await axios.get(`http://localhost:3000/users/${alias}`);
+      await axios.get(`${serverEndpoint}/users/${alias}`);
       return true; // El usuario existe en la base de datos
     } catch (error: unknown) {
       return false; // El usuario no existe en la base de datos
@@ -46,7 +53,7 @@ export async function privateKeyExists(alias: string): Promise<boolean> {
 export async function createUser(alias: string) {
   // Verificar si el usuario ya existe en la base de datos
   try {
-    await axios.get(`http://localhost:3000/users/${alias}`);
+    await axios.get(`${serverEndpoint}/users/${alias}`);
     console.log('El usuario ya existe en la base de datos.');
     return;
   } catch (error: unknown) {
@@ -55,7 +62,7 @@ export async function createUser(alias: string) {
 
   // Verificar si el usuario ya tiene una clave privada
   if (await privateKeyExists(alias)) {
-    console.log(`El usuario ya tiene una clave privada pero no existe en la base de datos, Elimina la clave:
+    console.log(`El usuario ya tiene una clave privada pero no existe en la base de datos. Elimina la clave:
 
 rm "./pidgeon_${alias}_privKey.pem"
 `);
@@ -64,7 +71,7 @@ rm "./pidgeon_${alias}_privKey.pem"
 
   try {
     const keyPair = generateRSAKeyPair();
-    await axios.post('http://localhost:3000/users', { alias, pubKey: keyPair.publicKey });
+    await axios.post(`${serverEndpoint}/users`, { alias, pubKey: keyPair.publicKey });
 
     // Escribir la clave privada en un archivo
     const privateKeyPath = `./pidgeon_${alias}_privKey.pem`;
@@ -79,7 +86,7 @@ rm "./pidgeon_${alias}_privKey.pem"
 // Enviar un mensaje a un usuario
 export async function sendMessage(userId: string, sender: string, content: string) {
   try {
-    const response = await axios.get(`http://localhost:3000/users/${userId}`);
+    const response = await axios.get(`${serverEndpoint}/users/${userId}`);
     const user = response.data;
     const encryptedMessage = encryptMessage(content, user.pubKey);
 
@@ -87,7 +94,7 @@ export async function sendMessage(userId: string, sender: string, content: strin
       sender,
       content: encryptedMessage,
     };
-    await axios.post(`http://localhost:3000/users/${userId}/inbox`, messageData);
+    await axios.post(`${serverEndpoint}/users/${userId}/inbox`, messageData);
     console.log('Mensaje enviado exitosamente');
   } catch (error: unknown) {
     console.error('Error al enviar el mensaje:', error);
@@ -97,7 +104,7 @@ export async function sendMessage(userId: string, sender: string, content: strin
 // Buscar un usuario por alias o pubKey
 export async function findUser(userId: string) {
   try {
-    const response = await axios.get(`http://localhost:3000/users/${userId}`);
+    const response = await axios.get(`${serverEndpoint}/users/${userId}`);
     console.log('Usuario encontrado:', response.data);
   } catch (error: unknown) {
     console.error('Error al buscar el usuario:', (error as any).response?.data.error);
@@ -107,7 +114,7 @@ export async function findUser(userId: string) {
 // Obtener la lista de usuarios
 export async function getUserList() {
   try {
-    const response = await axios.get('http://localhost:3000/users');
+    const response = await axios.get(`${serverEndpoint}/users`);
     console.log('Lista de usuarios:', response.data);
   } catch (error: unknown) {
     console.error('Error al obtener la lista de usuarios:', (error as any).response?.data.error);
@@ -120,7 +127,7 @@ export async function decryptInbox(userId: string) {
     const privateKeyPath = `./pidgeon_${userId}_privKey.pem`;
     const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 
-    const response = await axios.get(`http://localhost:3000/users/${userId}/inbox`);
+    const response = await axios.get(`${serverEndpoint}/users/${userId}/inbox`);
     const inbox = response.data;
 
     // Descifrar cada mensaje en la bandeja de entrada
@@ -131,14 +138,14 @@ export async function decryptInbox(userId: string) {
 
     console.log('Bandeja de entrada descifrada:', decryptedInbox);
   } catch (error: unknown) {
-    console.error('Error al descifrar la bandeja de entrada:', (error as any)?.response?.data?.error); 
+    console.error('Error al descifrar la bandeja de entrada:', (error as any)?.response?.data?.error);
   }
 }
 
 // Vaciar el inbox de un usuario
 export async function deleteInbox(userId: string) {
   try {
-    const response = await axios.get(`http://localhost:3000/users/${userId}/inbox/deleteKey`);
+    const response = await axios.get(`${serverEndpoint}/users/${userId}/inbox/deleteKey`);
     const { encryptedKey } = response.data;
 
     const privateKeyPath = `./pidgeon_${userId}_privKey.pem`;
@@ -148,8 +155,9 @@ export async function deleteInbox(userId: string) {
     const decryptedKey = key.decrypt(encryptedKey, 'utf8');
     console.log(`[DEBUG] Decrypted key: ${decryptedKey}`);
 
-
-    const deleteResponse = await axios.delete(`http://localhost:3000/users/${userId}/inbox`, { data: { deleteKey: decryptedKey } });
+    const deleteResponse = await axios.delete(`${serverEndpoint}/users/${userId}/inbox`, {
+      data: { deleteKey: decryptedKey },
+    });
 
     if (deleteResponse.data.success) {
       console.log('Bandeja de entrada vaciada correctamente');
@@ -157,7 +165,7 @@ export async function deleteInbox(userId: string) {
       console.log('No se pudo vaciar la bandeja de entrada');
     }
   } catch (error: unknown) {
-    console.error('Error al vaciar el inbox:', (error as any)?.response ?.data?.error);
+    console.error('Error al vaciar el inbox:', (error as any)?.response?.data?.error);
   }
 }
 
