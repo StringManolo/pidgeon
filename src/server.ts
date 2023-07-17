@@ -1,30 +1,49 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { User, Message, RandomString } from './models';
+import { User, Message } from './models';
 import NodeRSA from 'node-rsa';
 import crypto from 'crypto';
+import fs from 'fs';
 
 const app = express();
 const port = 3000;
 app.use(express.json());
 app.use(cors());
 
-const userList: User[] = [];
-const randomStrings: RandomString[] = [];
+// Ruta del archivo de datos
+const dataFilePath = './data.json';
+
+// Leer los datos almacenados en el archivo
+function readDataFromFile(): { userList: User[] } {
+  try {
+    const data = fs.readFileSync(dataFilePath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Si el archivo no existe o hay algún error al leerlo, retorna datos vacíos
+    return { userList: [] };
+  }
+}
+
+// Guardar los datos en el archivo
+function saveDataToFile(data: { userList: User[] }) {
+  fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
+}
 
 // Generar una clave aleatoria y cifrarla con la clave pública del usuario
-function encryptRandomKey(publicKey: string): [ string, string ] {
+function encryptRandomKey(publicKey: string): [string, string] {
   const randomString = crypto.randomBytes(32).toString('hex');
-console.log(`El string random es: ${randomString}`);
   const key = new NodeRSA();
   key.importKey(publicKey, 'pkcs8-public-pem');
-  return [ randomString, key.encrypt(randomString, 'base64') ];
+  return [randomString, key.encrypt(randomString, 'base64')];
 }
 
 // Verificar si la clave de borrado descifrada es correcta
 function isDeleteKeyValid(deleteKey: string | undefined, decryptedKey: string): boolean {
   return deleteKey !== undefined && deleteKey === decryptedKey;
 }
+
+// Leer los datos almacenados en el archivo al iniciar el servidor
+let { userList } = readDataFromFile();
 
 // Crear un nuevo usuario con alias y clave pública
 app.post('/users', (req: Request, res: Response) => {
@@ -39,17 +58,19 @@ app.post('/users', (req: Request, res: Response) => {
 
   const user: User = { alias, pubKey, inbox: [] };
   userList.push(user);
+
+  // Guardar los datos en el archivo
+  saveDataToFile({ userList });
+
   res.json({ success: true });
 });
-
-
 
 // Enviar mensaje a un usuario
 app.post('/users/:userId/inbox', (req: Request, res: Response) => {
   const userId = req.params.userId;
   const { sender, content } = req.body;
 
-  const user = userList.find((u) => u.alias === userId || u.pubKey === userId);
+  const user = userList.find((u) => u.alias === userId);
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' });
   }
@@ -61,13 +82,17 @@ app.post('/users/:userId/inbox', (req: Request, res: Response) => {
   };
 
   user.inbox.push(message);
+
+  // Guardar los datos en el archivo
+  saveDataToFile({ userList });
+
   res.json({ success: true });
 });
 
-// Buscar usuario por alias o pubKey
-app.get('/users/:userId', (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  const user = userList.find((u) => u.alias === userId || u.pubKey === userId);
+// Buscar usuario por alias
+app.get('/users/:alias', (req: Request, res: Response) => {
+  const alias = req.params.alias;
+  const user = userList.find((u) => u.alias === alias);
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' });
   }
@@ -77,18 +102,13 @@ app.get('/users/:userId', (req: Request, res: Response) => {
 
 // Obtener lista de usuarios
 app.get('/users', (req: Request, res: Response) => {
-  const userListWithoutInbox = userList.map((user) => {
-    const { inbox, ...userWithoutInbox } = user;
-    return userWithoutInbox;
-  });
-
-  res.json(userListWithoutInbox);
+  res.json(userList);
 });
 
 // Obtener la bandeja de entrada de un usuario
-app.get('/users/:userId/inbox', (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  const user = userList.find((u) => u.alias === userId || u.pubKey === userId);
+app.get('/users/:alias/inbox', (req: Request, res: Response) => {
+  const alias = req.params.alias;
+  const user = userList.find((u) => u.alias === alias);
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' });
   }
@@ -97,47 +117,41 @@ app.get('/users/:userId/inbox', (req: Request, res: Response) => {
 });
 
 // Generar y enviar la clave aleatoria cifrada al usuario para borrar los mensajes
-app.get('/users/:userId/inbox/deleteKey', (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  const user = userList.find((u) => u.alias === userId || u.pubKey === userId);
+app.get('/users/:alias/inbox/deleteKey', (req: Request, res: Response) => {
+  const alias = req.params.alias;
+  const user = userList.find((u) => u.alias === alias);
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' });
   }
 
-  const [ _randomString, encryptedKey ] = encryptRandomKey(user.pubKey);
-  randomStrings.push( { randomString: _randomString, id: user.alias } );
+  const [randomString, encryptedKey] = encryptRandomKey(user.pubKey);
   user.deleteKey = encryptedKey; // Almacenar la clave cifrada en el usuario
+
+  // Guardar los datos en el archivo
+  saveDataToFile({ userList });
 
   res.json({ encryptedKey });
 });
 
 // Borrar los mensajes de la bandeja de entrada de un usuario
-app.delete('/users/:userId/inbox', (req: Request, res: Response) => {
-  const userId = req.params.userId;
-  const user = userList.find((u) => u.alias === userId || u.pubKey === userId);
+app.delete('/users/:alias/inbox', (req: Request, res: Response) => {
+  const alias = req.params.alias;
+  const user = userList.find((u) => u.alias === alias);
   if (!user) {
     return res.status(404).json({ error: 'Usuario no encontrado' });
   }
 
   const deleteKey = req.body.deleteKey;
 
-
-
-  let randomString = "";
-  for (let i in randomStrings) {
-    if (randomStrings[i].id === userId) {
-      randomString = randomStrings[i].randomString;
-      break
-    }
-  }
-
-
-  if (user.deleteKey && !isDeleteKeyValid(deleteKey, randomString)) {
+  if (user.deleteKey && !isDeleteKeyValid(deleteKey, user.deleteKey)) {
     return res.json({ success: false });
   }
 
   user.inbox = [];
   delete user.deleteKey; // Eliminar la propiedad deleteKey
+
+  // Guardar los datos en el archivo
+  saveDataToFile({ userList });
 
   res.json({ success: true });
 });
@@ -146,3 +160,4 @@ app.delete('/users/:userId/inbox', (req: Request, res: Response) => {
 app.listen(port, () => {
   console.log(`Servidor iniciado en http://localhost:${port}`);
 });
+

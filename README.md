@@ -4,7 +4,7 @@
 
 Encrypted Inbox
 
-### Cliente Oficial
+## Cliente WEB Oficial
 https://stringmanolo.github.io/pidgeon/
 
 ### Endpoints Públicos
