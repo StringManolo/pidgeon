@@ -4,7 +4,16 @@
 
 Encrypted Inbox
 
-#### Install
+### Cliente Oficial
+https://stringmanolo.github.io/pidgeon/
+
+### Endpoints Públicos
+1. https://publicpidgeon.glitch.me/
+
+_Si hosteas el server.js en algún endpoint, abre un issue y lo agrego a la lista_
+
+
+#### Install 
 ```bash
 git clone https://github.com/StringManolo/pidgeon;
 cd pidgeon;
@@ -17,6 +26,6 @@ node ./dist/server.js;
 
 #### Run Client
 ```bash
-node ./dist/client.js;
+node ./dist/client-cli.js;
 ```
 

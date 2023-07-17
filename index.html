@@ -86,7 +86,7 @@
 
       <div class="input-container">
         <label for="endpointInput">Server Endpoint:</label>
-        <input type="text" id="endpointInput" value="http://localhost:3000" />
+        <input type="text" id="endpointInput" value="https://publicpidgeon.glitch.me/" />
         <button onclick="updateEndpoint()">Update Endpoint</button>
       </div>
 
@@ -96,7 +96,7 @@
     <script>
       let publicKey;
       let privateKey;
-      let serverEndpoint = 'http://localhost:3000';
+      let serverEndpoint = 'https://publicpidgeon.glitch.me/';
 
       function logToDiv(message) {
         const logDiv = document.getElementById('logOutput');
