@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import { User, Message } from './models';
+import { User, Message, RandomString } from './models';
 import NodeRSA from 'node-rsa';
 import crypto from 'crypto';
 import fs from 'fs';
@@ -10,6 +10,7 @@ const port = 3000;
 app.use(express.json());
 app.use(cors());
 
+const randomStrings: RandomString[] = [];
 // Ruta del archivo de datos
 const dataFilePath = './data.json';
 
@@ -39,7 +40,11 @@ function encryptRandomKey(publicKey: string): [string, string] {
 
 // Verificar si la clave de borrado descifrada es correcta
 function isDeleteKeyValid(deleteKey: string | undefined, decryptedKey: string): boolean {
-  return deleteKey !== undefined && deleteKey === decryptedKey;
+  if (deleteKey === undefined) {
+    return false;
+  }
+
+  return deleteKey === decryptedKey;
 }
 
 // Leer los datos almacenados en el archivo al iniciar el servidor
@@ -116,6 +121,7 @@ app.get('/users/:alias/inbox', (req: Request, res: Response) => {
   res.json(user.inbox);
 });
 
+
 // Generar y enviar la clave aleatoria cifrada al usuario para borrar los mensajes
 app.get('/users/:alias/inbox/deleteKey', (req: Request, res: Response) => {
   const alias = req.params.alias;
@@ -125,12 +131,14 @@ app.get('/users/:alias/inbox/deleteKey', (req: Request, res: Response) => {
   }
 
   const [randomString, encryptedKey] = encryptRandomKey(user.pubKey);
+  randomStrings.push({ randomString, id: alias }); // Almacenar el randomString en el array global
+
   user.deleteKey = encryptedKey; // Almacenar la clave cifrada en el usuario
 
   // Guardar los datos en el archivo
   saveDataToFile({ userList });
 
-  res.json({ encryptedKey });
+  res.json({ encryptedKey, alias }); // Devolver también el randomStringId al cliente
 });
 
 // Borrar los mensajes de la bandeja de entrada de un usuario
@@ -142,13 +150,20 @@ app.delete('/users/:alias/inbox', (req: Request, res: Response) => {
   }
 
   const deleteKey = req.body.deleteKey;
+  const randomStringId = alias;
 
-  if (user.deleteKey && !isDeleteKeyValid(deleteKey, user.deleteKey)) {
+  // Buscar el randomString correspondiente al randomStringId en el array global
+  const randomStringObj = randomStrings.find((obj) => obj.id === randomStringId);
+
+  if (!randomStringObj || !isDeleteKeyValid(deleteKey,  randomStringObj.randomString)) {
     return res.json({ success: false });
   }
 
   user.inbox = [];
   delete user.deleteKey; // Eliminar la propiedad deleteKey
+
+  // Eliminar el randomString del array global
+  randomStrings.splice(randomStrings.indexOf(randomStringObj), 1);
 
   // Guardar los datos en el archivo
   saveDataToFile({ userList });

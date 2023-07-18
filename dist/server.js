@@ -12,6 +12,7 @@ const app = (0, express_1.default)();
 const port = 3000;
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
+const randomStrings = [];
 // Ruta del archivo de datos
 const dataFilePath = './data.json';
 // Leer los datos almacenados en el archivo
@@ -38,7 +39,10 @@ function encryptRandomKey(publicKey) {
 }
 // Verificar si la clave de borrado descifrada es correcta
 function isDeleteKeyValid(deleteKey, decryptedKey) {
-    return deleteKey !== undefined && deleteKey === decryptedKey;
+    if (deleteKey === undefined) {
+        return false;
+    }
+    return deleteKey === decryptedKey;
 }
 // Leer los datos almacenados en el archivo al iniciar el servidor
 let { userList } = readDataFromFile();
@@ -105,10 +109,11 @@ app.get('/users/:alias/inbox/deleteKey', (req, res) => {
         return res.status(404).json({ error: 'Usuario no encontrado' });
     }
     const [randomString, encryptedKey] = encryptRandomKey(user.pubKey);
+    randomStrings.push({ randomString, id: alias }); // Almacenar el randomString en el array global
     user.deleteKey = encryptedKey; // Almacenar la clave cifrada en el usuario
     // Guardar los datos en el archivo
     saveDataToFile({ userList });
-    res.json({ encryptedKey });
+    res.json({ encryptedKey, alias }); // Devolver también el randomStringId al cliente
 });
 // Borrar los mensajes de la bandeja de entrada de un usuario
 app.delete('/users/:alias/inbox', (req, res) => {
@@ -118,11 +123,16 @@ app.delete('/users/:alias/inbox', (req, res) => {
         return res.status(404).json({ error: 'Usuario no encontrado' });
     }
     const deleteKey = req.body.deleteKey;
-    if (user.deleteKey && !isDeleteKeyValid(deleteKey, user.deleteKey)) {
+    const randomStringId = alias;
+    // Buscar el randomString correspondiente al randomStringId en el array global
+    const randomStringObj = randomStrings.find((obj) => obj.id === randomStringId);
+    if (!randomStringObj || !isDeleteKeyValid(deleteKey, randomStringObj.randomString)) {
         return res.json({ success: false });
     }
     user.inbox = [];
     delete user.deleteKey; // Eliminar la propiedad deleteKey
+    // Eliminar el randomString del array global
+    randomStrings.splice(randomStrings.indexOf(randomStringObj), 1);
     // Guardar los datos en el archivo
     saveDataToFile({ userList });
     res.json({ success: true });
