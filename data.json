@@ -1,9 +1,0 @@
-{
-  "userList": [
-    {
-      "alias": "testBo",
-      "pubKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiE9f1QV5asLjT0RVr/Cf\nBn+h2NFaXZ05xt+5gJJhxkGmZQfXTVshg5wc3twpMAGiav3eLIVxVa8LB/AjQoYK\negcf/5jXDGAsjtm1v61TjiUQ7uHLyYGvE0GZ6hWA0I7362RaLakZ+WcwauDHDZmP\nORIovb2/hfdc4eBG+UqkpjVZ93pJT0K+HosKkS23D5tTpgVXIs/VQMns1NS4S6nD\nq4yGL7P4H6HjSfhphZdzcfwZ8yvBlkyXBJ86kTbiUcpkRlUDQKmgLEwSihKkC6rV\nQ0tccOj6MErWD7Z24z9/bsR5RlPKaPEfa5vfevNtCY8ow2FNqO28CsHikCl2vnGY\npQIDAQAB\n-----END PUBLIC KEY-----",
-      "inbox": []
-    }
-  ]
-}
